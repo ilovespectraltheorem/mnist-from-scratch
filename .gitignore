@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# MNIST raw files (download them; don't commit 55 MB of data)
+data/
+*.ubyte
+
+# Trained weights and raw experiment arrays (regenerate with main.py)
+results/models/
+results/*.npz
+
+# macOS
+.DS_Store
+
+# Keep: results/figures/*.png, results/*.md, results/*.json and demo/model.js
+# (the README shows the figures, and GitHub Pages needs model.js for the demo)
+ROADMAP.md
