@@ -1,0 +1,289 @@
+{
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "steps": [
+    {
+      "name": "Baseline",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          128
+        ],
+        "activation": "sigmoid",
+        "init": "lecun",
+        "dropout": 0.0,
+        "optimizer": "sgd",
+        "lr": 0.1,
+        "momentum": 0.0,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 17,
+        "early_stopping_patience": null,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9449,
+        0.9437,
+        0.9467
+      ],
+      "val_acc": [
+        0.9392,
+        0.94,
+        0.9424
+      ],
+      "seconds": [
+        3.623900890350342,
+        3.922287940979004,
+        4.004729747772217
+      ],
+      "epochs_run": [
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "name": "ReLU",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          128
+        ],
+        "activation": "relu",
+        "init": "lecun",
+        "dropout": 0.0,
+        "optimizer": "sgd",
+        "lr": 0.1,
+        "momentum": 0.0,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 17,
+        "early_stopping_patience": null,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9766,
+        0.9755,
+        0.9747
+      ],
+      "val_acc": [
+        0.9684,
+        0.9708,
+        0.9692
+      ],
+      "seconds": [
+        3.703372001647949,
+        3.6639750003814697,
+        4.37528920173645
+      ],
+      "epochs_run": [
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "name": "He init",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          128
+        ],
+        "activation": "relu",
+        "init": "he",
+        "dropout": 0.0,
+        "optimizer": "sgd",
+        "lr": 0.1,
+        "momentum": 0.0,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 17,
+        "early_stopping_patience": null,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9766,
+        0.9748,
+        0.9751
+      ],
+      "val_acc": [
+        0.9696,
+        0.9716,
+        0.9704
+      ],
+      "seconds": [
+        3.6961262226104736,
+        3.715815305709839,
+        3.6048858165740967
+      ],
+      "epochs_run": [
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "name": "Momentum",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          128
+        ],
+        "activation": "relu",
+        "init": "he",
+        "dropout": 0.0,
+        "optimizer": "sgd",
+        "lr": 0.01,
+        "momentum": 0.9,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 17,
+        "early_stopping_patience": null,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9749,
+        0.9753,
+        0.9753
+      ],
+      "val_acc": [
+        0.9688,
+        0.9706,
+        0.9696
+      ],
+      "seconds": [
+        4.0309741497039795,
+        4.031013011932373,
+        4.064997911453247
+      ],
+      "epochs_run": [
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "name": "Adam",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          128
+        ],
+        "activation": "relu",
+        "init": "he",
+        "dropout": 0.0,
+        "optimizer": "adam",
+        "lr": 0.001,
+        "momentum": 0.0,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 17,
+        "early_stopping_patience": null,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9779,
+        0.9771,
+        0.9772
+      ],
+      "val_acc": [
+        0.976,
+        0.9742,
+        0.974
+      ],
+      "seconds": [
+        6.282821893692017,
+        6.2946860790252686,
+        6.288594961166382
+      ],
+      "epochs_run": [
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "name": "Wider (256)",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          256
+        ],
+        "activation": "relu",
+        "init": "he",
+        "dropout": 0.0,
+        "optimizer": "adam",
+        "lr": 0.001,
+        "momentum": 0.0,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 17,
+        "early_stopping_patience": null,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9803,
+        0.9787,
+        0.9783
+      ],
+      "val_acc": [
+        0.9762,
+        0.9722,
+        0.9754
+      ],
+      "seconds": [
+        11.349483728408813,
+        11.891914129257202,
+        11.525065898895264
+      ],
+      "epochs_run": [
+        17,
+        17,
+        17
+      ]
+    },
+    {
+      "name": "Dropout + early stop",
+      "config": {
+        "arch": "mlp",
+        "hidden": [
+          256
+        ],
+        "activation": "relu",
+        "init": "he",
+        "dropout": 0.2,
+        "optimizer": "adam",
+        "lr": 0.001,
+        "momentum": 0.0,
+        "weight_decay": 0.0,
+        "batch_size": 100,
+        "epochs": 40,
+        "early_stopping_patience": 5,
+        "augment_max_shift": 0
+      },
+      "test_acc": [
+        0.9808,
+        0.9797,
+        0.9812
+      ],
+      "val_acc": [
+        0.9768,
+        0.9802,
+        0.9784
+      ],
+      "seconds": [
+        11.102644920349121,
+        14.088639974594116,
+        11.13738489151001
+      ],
+      "epochs_run": [
+        15,
+        19,
+        15
+      ]
+    }
+  ]
+}
