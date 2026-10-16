@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digit Reader</title>
+<meta name="description" content="Draw a digit and watch a neural network written from scratch in NumPy read it, live in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f3f5f8;
+    --ink: #18202b;
+    --graphite: #5b6573;
+    --rule: #d9dee6;
+    --pad: #121821;
+    --pad-grid: rgba(255, 255, 255, 0.06);
+    --accent: #2f5bd3;
+    --accent-soft: #c9d5f5;
+    --track: #e4e8ef;
+    --good: #1d7a46;
+    --warn: #a4471b;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f141b; --ink: #e8edf3; --graphite: #9aa5b4; --rule: #222b37;
+      --pad: #05080c; --pad-grid: rgba(255, 255, 255, 0.07);
+      --accent: #6d8ff0; --accent-soft: #2a3a63; --track: #1b2330;
+      --good: #4fbf7f; --warn: #e3875a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f141b; --ink: #e8edf3; --graphite: #9aa5b4; --rule: #222b37;
+    --pad: #05080c; --pad-grid: rgba(255, 255, 255, 0.07);
+    --accent: #6d8ff0; --accent-soft: #2a3a63; --track: #1b2330;
+    --good: #4fbf7f; --warn: #e3875a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.5;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 16px 40px; }
+  h1 { font-size: clamp(2.4rem, 7vw, 3.6rem); font-weight: 900; line-height: 1; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .lede { color: var(--graphite); max-width: 56ch; margin: 0 0 36px; }
+  .stage { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 40px; align-items: start; }
+  .pad-wrap { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
+              background: var(--pad); touch-action: none; }
+  .pad-wrap::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(var(--pad-grid) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--pad-grid) 1px, transparent 1px);
+    background-size: calc(100% / 28) calc(100% / 28); }
+  #pad { width: 100%; height: 100%; display: block; cursor: crosshair; }
+  .hint { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,0.45);
+          font-size: 0.95rem; pointer-events: none; transition: opacity 0.2s; }
+  .controls { display: flex; gap: 12px; margin-top: 14px; }
+  button { font: inherit; font-weight: 500; color: var(--ink); background: transparent; border: 1px solid var(--rule);
+           border-radius: 6px; padding: 8px 16px; cursor: pointer; }
+  button:hover { border-color: var(--graphite); }
+  button:focus-visible, #pad:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .answer { display: flex; align-items: flex-end; gap: 20px; margin-bottom: 20px; min-height: 120px; }
+  .answer .digit { font-size: 7.5rem; font-weight: 900; line-height: 0.85; font-variant-numeric: tabular-nums;
+                   letter-spacing: -0.04em; min-width: 0.6em; }
+  .answer .conf { color: var(--graphite); padding-bottom: 6px; }
+  .answer .conf strong { color: var(--ink); font-weight: 700; display: block; font-size: 1.25rem; }
+  .bars { list-style: none; margin: 0 0 28px; padding: 0; display: grid; gap: 4px; }
+  .bars li { display: grid; grid-template-columns: 1.2em minmax(0, 1fr) 3.2em; gap: 10px; align-items: center;
+             font-variant-numeric: tabular-nums; color: var(--graphite); }
+  .bars li.top { color: var(--ink); font-weight: 700; }
+  .track { height: 10px; background: var(--track); border-radius: 0 4px 4px 0; overflow: hidden; }
+  .fill { height: 100%; width: 0; background: var(--accent-soft); border-radius: 0 4px 4px 0; transition: width 0.12s ease-out; }
+  .bars li.top .fill { background: var(--accent); }
+  .bars .pct { text-align: right; font-size: 0.875rem; }
+  .sees { display: flex; gap: 16px; align-items: center; color: var(--graphite); font-size: 0.9rem; }
+  #seen { width: 112px; height: 112px; image-rendering: pixelated; border-radius: 4px; background: #000; flex: none; }
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); color: var(--graphite); font-size: 0.9rem; }
+  footer p { margin: 0 0 6px; max-width: 70ch; }
+  #check.ok { color: var(--good); }
+  #check.bad { color: var(--warn); }
+  a { color: var(--accent); }
+  @media (max-width: 640px) {
+    main { padding-top: 32px; }
+    .stage { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    .pad-wrap { max-width: 100%; }
+    .answer { min-height: 96px; }
+    .answer .digit { font-size: 5.5rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .fill, .hint { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Draw a digit.</h1>
+  <p class="lede">A neural network I wrote from scratch in NumPy, trained on 55,000 handwritten digits,
+    reads your drawing as you go. No machine-learning libraries anywhere: the same forward pass runs here in plain JavaScript.</p>
+
+  <div class="stage">
+    <div>
+      <div class="pad-wrap">
+        <canvas id="pad" width="280" height="280" aria-label="Drawing pad: draw a digit from 0 to 9" tabindex="0"></canvas>
+        <div class="hint" id="hint">Draw 0–9 here</div>
+      </div>
+      <div class="controls">
+        <button id="clear" type="button">Clear</button>
+      </div>
+    </div>
+
+    <section aria-live="polite">
+      <div class="answer">
+        <div class="digit" id="digit">?</div>
+        <div class="conf" id="conf">Waiting for a drawing</div>
+      </div>
+      <ol class="bars" id="bars"></ol>
+      <div class="sees">
+        <canvas id="seen" width="28" height="28" aria-label="Your drawing as the network sees it, 28 by 28 pixels"></canvas>
+        <p>What the network actually sees: your drawing cropped, scaled into a 20×20 box and centred by its centre of mass, the same way MNIST was made.</p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <p id="arch">Loading the model…</p>
+    <p id="check"></p>
+    <p><a id="repo" href="https://github.com/ilovespectraltheorem/mnist-from-scratch">Code, experiments and write-up on GitHub</a></p>
+  </footer>
+</main>
+
+<script src="model.js"></script>
+<script>
+// =====================================================================
+//  The network's maths. These mirror the Python layers exactly.
+// =====================================================================
+
+// out[j] = b[j] + sum_i x[i] * W[i][j]      (W is stored [inputs][outputs], like numpy)
+function dense(x, W, b) {
+  const out = Float64Array.from(b);
+  for (let i = 0; i < x.length; i++) {
+    const xi = x[i];
+    if (xi === 0) continue;
+    const row = W[i];
+    for (let j = 0; j < out.length; j++) out[j] += xi * row[j];
+  }
+  return out;
+}
+
+function relu(v) { return v.map(a => (a > 0 ? a : 0)); }
+
+function sigmoid(v) { return v.map(a => 1 / (1 + Math.exp(-a))); }
+
+function softmax(v) {
+  const m = Math.max(...v);
+  const e = v.map(a => Math.exp(a - m));
+  const s = e.reduce((p, q) => p + q, 0);
+  return e.map(a => a / s);
+}
+
+function forward(x) {
+  let h = Float64Array.from(x);
+  for (const layer of MODEL.layers) {
+    if (layer.type === "linear") h = dense(h, layer.W, layer.b);
+    else if (layer.type === "relu") h = relu(h);
+    else if (layer.type === "sigmoid") h = sigmoid(h);
+    else throw new Error("unknown layer " + layer.type);
+  }
+  return softmax(Array.from(h));
+}
+
+// =====================================================================
+//  Centring, as in preprocess_drawing() in src/robustness.py.
+// =====================================================================
+
+// img is a Float32Array of 784 values (row by row). Returns [row, col] of the centre of mass.
+function centreOfMass(img) {
+  let total = 0, r = 0, c = 0;
+  for (let i = 0; i < 784; i++) {
+    const v = img[i];
+    total += v; r += v * Math.floor(i / 28); c += v * (i % 28);
+  }
+  return total > 0 ? [r / total, c / total] : [14, 14];
+}
+
+// Move the picture dx columns right and dy rows down, filling with 0. No wrap-around.
+function shiftImage(img, dx, dy) {
+  const out = new Float32Array(784);
+  for (let r = 0; r < 28; r++) {
+    for (let c = 0; c < 28; c++) {
+      const r2 = r + dy, c2 = c + dx;
+      if (r2 >= 0 && r2 < 28 && c2 >= 0 && c2 < 28) out[r2 * 28 + c2] = img[r * 28 + c];
+    }
+  }
+  return out;
+}
+
+// =====================================================================
+//  Everything below is page plumbing: drawing, cropping, showing results.
+// =====================================================================
+const SIZE = 280, BRUSH = 10, THRESHOLD = 0.1;
+const pad = document.getElementById("pad");
+const ctx = pad.getContext("2d", { willReadFrequently: true });
+const seen = document.getElementById("seen").getContext("2d");
+const barsEl = document.getElementById("bars");
+const digitEl = document.getElementById("digit");
+const confEl = document.getElementById("conf");
+const hint = document.getElementById("hint");
+
+const rows = [];
+for (let d = 0; d < 10; d++) {
+  const li = document.createElement("li");
+  li.innerHTML = `<span>${d}</span><div class="track"><div class="fill"></div></div><span class="pct">0%</span>`;
+  barsEl.appendChild(li);
+  rows.push({ li, fill: li.querySelector(".fill"), pct: li.querySelector(".pct") });
+}
+
+function clearPad() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, SIZE, SIZE);
+  seen.clearRect(0, 0, 28, 28);
+  digitEl.textContent = "?";
+  confEl.textContent = "Waiting for a drawing";
+  rows.forEach(r => { r.fill.style.width = "0"; r.pct.textContent = "0%"; r.li.classList.remove("top"); });
+  hint.style.opacity = 1;
+}
+
+let drawing = false, last = null, queued = false;
+function pos(e) {
+  const r = pad.getBoundingClientRect();
+  return [(e.clientX - r.left) * SIZE / r.width, (e.clientY - r.top) * SIZE / r.height];
+}
+function dot([x, y]) { ctx.beginPath(); ctx.arc(x, y, BRUSH, 0, Math.PI * 2); ctx.fill(); }
+pad.addEventListener("pointerdown", e => {
+  drawing = true; last = pos(e); pad.setPointerCapture(e.pointerId);
+  ctx.fillStyle = "#fff"; dot(last); hint.style.opacity = 0; schedule();
+});
+pad.addEventListener("pointermove", e => {
+  if (!drawing) return;
+  const p = pos(e);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 * BRUSH; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(...last); ctx.lineTo(...p); ctx.stroke();
+  last = p; schedule();
+});
+["pointerup", "pointercancel"].forEach(t => pad.addEventListener(t, () => { drawing = false; schedule(); }));
+document.getElementById("clear").addEventListener("click", clearPad);
+pad.addEventListener("keydown", e => { if (e.key === "Escape" || e.key === "Delete") clearPad(); });
+
+function schedule() {
+  if (queued) return;
+  queued = true;
+  requestAnimationFrame(() => { queued = false; predict(); });
+}
+
+// Crop to the ink, shrink the longer side to 20 px (box filter), paste into 28x28.
+function preprocess() {
+  const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
+  const g = new Float32Array(SIZE * SIZE);
+  let r0 = SIZE, r1 = -1, c0 = SIZE, c1 = -1;
+  for (let i = 0; i < g.length; i++) {
+    g[i] = data[4 * i] / 255;
+    if (g[i] > THRESHOLD) {
+      const r = Math.floor(i / SIZE), c = i % SIZE;
+      if (r < r0) r0 = r; if (r > r1) r1 = r; if (c < c0) c0 = c; if (c > c1) c1 = c;
+    }
+  }
+  if (r1 < 0) return null;
+  const h = r1 - r0 + 1, w = c1 - c0 + 1, scale = 20 / Math.max(h, w);
+  const nh = Math.max(1, Math.round(h * scale)), nw = Math.max(1, Math.round(w * scale));
+  const img = new Float32Array(784);
+  const top = (28 - nh) >> 1, left = (28 - nw) >> 1;
+  for (let ty = 0; ty < nh; ty++) {
+    const ya = r0 + Math.floor(ty * h / nh), yb = Math.max(ya + 1, r0 + Math.floor((ty + 1) * h / nh));
+    for (let tx = 0; tx < nw; tx++) {
+      const xa = c0 + Math.floor(tx * w / nw), xb = Math.max(xa + 1, c0 + Math.floor((tx + 1) * w / nw));
+      let s = 0;
+      for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) s += g[y * SIZE + x];
+      img[(top + ty) * 28 + left + tx] = s / ((yb - ya) * (xb - xa));
+    }
+  }
+  const [cy, cx] = centreOfMass(img);
+  return shiftImage(img, Math.round(14 - cx), Math.round(14 - cy));
+}
+
+function show28(img) {
+  const im = seen.createImageData(28, 28);
+  for (let i = 0; i < 784; i++) {
+    const v = Math.round(255 * Math.min(1, Math.max(0, img[i])));
+    im.data.set([v, v, v, 255], 4 * i);
+  }
+  seen.putImageData(im, 0, 0);
+}
+
+function predict() {
+  let x, p;
+  try { x = preprocess(); } catch (err) { confEl.textContent = err.message; return; }
+  if (!x) return;
+  show28(x);
+  try { p = forward(x); } catch (err) { confEl.textContent = err.message; return; }
+  const best = p.indexOf(Math.max(...p));
+  digitEl.textContent = best;
+  confEl.innerHTML = `<strong>${(100 * p[best]).toFixed(1)}% sure</strong>runner-up: ${secondBest(p, best)}`;
+  rows.forEach((r, d) => {
+    r.fill.style.width = (100 * p[d]).toFixed(1) + "%";
+    r.pct.textContent = (100 * p[d]).toFixed(0) + "%";
+    r.li.classList.toggle("top", d === best);
+  });
+}
+
+function secondBest(p, best) {
+  let j = best === 0 ? 1 : 0;
+  for (let d = 0; d < 10; d++) if (d !== best && p[d] > p[j]) j = d;
+  return `${j} at ${(100 * p[j]).toFixed(1)}%`;
+}
+
+function describeModel() {
+  const arch = document.getElementById("arch"), check = document.getElementById("check");
+  if (typeof MODEL === "undefined") {
+    arch.textContent = "No model found. Run `python main.py export` to create demo/model.js, then reload.";
+    return;
+  }
+  const sizes = [784];
+  let params = 0;
+  for (const l of MODEL.layers) if (l.type === "linear") { sizes.push(l.b.length); params += l.W.length * l.b.length + l.b.length; }
+  const acts = [...new Set(MODEL.layers.filter(l => l.type !== "linear").map(l => l.type))].join("/");
+  arch.textContent = `Network: ${sizes.join("-")} fully connected (${acts}), ${params.toLocaleString()} parameters, trained with backpropagation I wrote myself.`;
+  try {
+    const p = forward(MODEL.check.x);
+    const diff = Math.max(...p.map((v, i) => Math.abs(v - MODEL.check.probs[i])));
+    const ok = diff < 1e-3;
+    check.className = ok ? "ok" : "bad";
+    check.textContent = ok
+      ? `Self-check passed: this page's forward pass matches the Python model to within ${diff.toExponential(0)}.`
+      : `Self-check failed: this page disagrees with the Python model by ${diff.toFixed(4)}. Check forward().`;
+  } catch (err) {
+    check.className = "bad";
+    check.textContent = "Self-check could not run: " + err.message;
+  }
+}
+
+clearPad();
+describeModel();
+</script>
+</body>
+</html>
